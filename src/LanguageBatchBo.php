@@ -15,7 +15,7 @@ use League\Flysystem\Filesystem;
 class LanguageBatchBo
 {
 
-    private $cacheGenerator;
+    private $cacheCreator;
 
     private $renderer;
 
@@ -90,15 +90,20 @@ class LanguageBatchBo
 
     private function getCacheCreator()
     {
-        if (null === $this->cacheGenerator) {
+        if (null === $this->cacheCreator) {
             $cacheDirectory = Config::get('system.paths.root') . '/cache';
 
-            $this->cacheGenerator = new CacheCreator(
+            $this->cacheCreator = new CacheCreator(
                 new Filesystem(new Local($cacheDirectory))
             );
         }
 
-        return $this->cacheGenerator;
+        return $this->cacheCreator;
+    }
+    
+    public function setCacheCreator(CacheCreator $cacheCreator)
+    {
+        $this->cacheCreator = $cacheCreator;
     }
 
     public function generateAppletLanguageXmlFiles()
