@@ -16,6 +16,6 @@ class CacheGenerator
 
     public function create($path, $content)
     {
-         $this->filesystem->put($path, $content);
+         return $this->filesystem->put($path, $content);
     }
 }

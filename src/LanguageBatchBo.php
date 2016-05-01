@@ -18,7 +18,11 @@ class LanguageBatchBo
 
     private function createLanguageFile($filePath, $content)
     {
-        $this->getCacheGenerator()->create($filePath, $content);
+        $result = $this->getCacheGenerator()->create($filePath, $content);
+
+        if (!$result) {
+            throw new LanguageBatchException('Unable to generate language file!');
+        }
     }
 
     private function getCacheGenerator()
@@ -42,14 +46,11 @@ class LanguageBatchBo
 			echo "[APPLICATION: " . $cachePath . "]\n";
 
 			foreach ($languages as $language) {
-                try {
-                    $data = $this->getLanguageFile($language);
-                    $this->createLanguageFile("/$cachePath/$language.php", $data);
+                $data = $this->getLanguageFile($language);
 
-                    echo "\t[LANGUAGE: " . $language . "] OK\n";
-                } catch (\Exception $e) {
-					throw new \Exception('Unable to generate language file!', 0, $e);
-				}
+                $this->createLanguageFile("/$cachePath/$language.php", $data);
+
+                echo "\t[LANGUAGE: " . $language . "] OK\n";
 			}
 		}
 	}
