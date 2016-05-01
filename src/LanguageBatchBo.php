@@ -70,18 +70,6 @@ class LanguageBatchBo
         return $this->cacheGenerator;
     }
 
-    /**
-	 * Gets the directory of the cached language files.
-	 *
-	 * @param string $application   The application.
-	 *
-	 * @return string   The directory of the cached language files.
-	 */
-	protected static function getLanguageCachePath($application)
-	{
-		return Config::get('system.paths.root') . '/cache/' . $application. '/';
-	}
-
     public static function generateAppletLanguageXmlFiles()
 	{
 		// List of the applets [directory => applet_id].
