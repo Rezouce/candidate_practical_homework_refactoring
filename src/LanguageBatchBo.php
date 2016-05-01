@@ -106,7 +106,6 @@ class LanguageBatchBo
 		echo "\nApplet language XMLs generated.\n";
 	}
 
-
     /**
 	 * Gets the available languages for the given applet.
 	 *
@@ -162,18 +161,6 @@ class LanguageBatchBo
 		}
 	}
 
-    /**
-	 * Checks the api call result.
-	 *
-	 * @param mixed $result The api call result to check.
-	 *
-	 * @throws \Exception
-	 */
-	protected function checkForApiErrorResult($result)
-	{
-        (new ApiCallCheck($result))->check();
-	}
-
     protected function getApiCallResult($getParameters, $postParameters)
     {
         $languageResponse = ApiCall::call(
@@ -186,5 +173,10 @@ class LanguageBatchBo
         $this->checkForApiErrorResult($languageResponse);
 
         return $languageResponse['data'];
+    }
+
+    protected function checkForApiErrorResult($result)
+    {
+        (new ApiCallCheck($result))->check();
     }
 }
