@@ -12,7 +12,40 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
     {
         parent::setUp();
 
+        $this->rmdirRecursive(CACHE_PATH);
+
         $this->languageBatchBo = new LanguageBatchBo;
+    }
+
+    public function tearDown()
+    {
+        parent::tearDown();
+
+        $this->rmdirRecursive(CACHE_PATH);
+    }
+
+    /**
+     * Remove the cache directory to ensure we're not testing the results with already existing files.
+     *
+     * @param $directory
+     */
+    private function rmdirRecursive($directory) {
+        if (!is_dir($directory)) {
+            return;
+        }
+
+        foreach(scandir($directory) as $file) {
+            if ('.' === $file || '..' === $file) {
+                continue;
+            }
+            if (is_dir("$directory/$file")) {
+                $this->rmdirRecursive("$directory/$file");
+            }
+            else {
+                unlink("$directory/$file");
+            }
+        }
+        rmdir($directory);
     }
 
     public function testItGenerateLanguageFiles()
