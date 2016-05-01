@@ -14,11 +14,6 @@ class LanguageBatchBo
 	 */
 	protected static $applications = array();
 
-	/**
-	 * Starts the language file generation.
-	 *
-	 * @return void
-	 */
 	public static function generateLanguageFiles()
 	{
 		// The applications where we need to translate.
@@ -42,12 +37,11 @@ class LanguageBatchBo
 	/**
 	 * Gets the language file for the given language and stores it.
 	 *
-	 * @param string $application   The name of the application.
-	 * @param string $language      The identifier of the language.
+	 * @param string $application The name of the application.
+	 * @param string $language The identifier of the language.
+	 * @return bool If there was an error during the download of the language file.
 	 *
-	 * @throws CurlException   If there was an error during the download of the language file.
-	 *
-	 * @return bool   The success of the operation.
+	 * @throws \Exception
 	 */
 	protected static function getLanguageFile($application, $language)
 	{
@@ -94,13 +88,6 @@ class LanguageBatchBo
 		return Config::get('system.paths.root') . '/cache/' . $application. '/';
 	}
 
-	/**
-	 * Gets the language files for the applet and puts them into the cache.
-	 *
-	 * @throws Exception   If there was an error.
-	 *
-	 * @return void
-	 */
 	public static function generateAppletLanguageXmlFiles()
 	{
 		// List of the applets [directory => applet_id].
@@ -140,9 +127,9 @@ class LanguageBatchBo
 	/**
 	 * Gets the available languages for the given applet.
 	 *
-	 * @param string $applet   The applet identifier.
-	 *
-	 * @return array   The list of the available applet languages.
+	 * @param string $applet The applet identifier.
+	 * @return array The list of the available applet languages.
+	 * @throws \Exception
 	 */
 	protected static function getAppletLanguages($applet)
 	{
@@ -170,10 +157,10 @@ class LanguageBatchBo
 	/**
 	 * Gets a language xml for an applet.
 	 *
-	 * @param string $applet      The identifier of the applet.
-	 * @param string $language    The language identifier.
-	 *
-	 * @return string|false   The content of the language file or false if weren't able to get it.
+	 * @param string $applet The identifier of the applet.
+	 * @param string $language The language identifier.
+	 * @return false|string The content of the language file or false if weren't able to get it.
+	 * @throws \Exception
 	 */
 	protected static function getAppletLanguageFile($applet, $language)
 	{
@@ -204,11 +191,9 @@ class LanguageBatchBo
 	/**
 	 * Checks the api call result.
 	 *
-	 * @param mixed  $result   The api call result to check.
+	 * @param mixed $result The api call result to check.
 	 *
-	 * @throws Exception   If the api call was not successful.
-	 *
-	 * @return void
+	 * @throws \Exception
 	 */
 	protected static function checkForApiErrorResult($result)
 	{
