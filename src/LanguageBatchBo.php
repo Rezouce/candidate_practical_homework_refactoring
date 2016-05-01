@@ -2,19 +2,40 @@
 
 namespace Language;
 
+use League\Flysystem\Adapter\Local;
+use League\Flysystem\Filesystem;
+
 /**
  * Business logic related to generating language files.
  */
 class LanguageBatchBo
 {
-	/**
+    /**
 	 * Contains the applications which ones require translations.
 	 *
 	 * @var array
 	 */
 	protected static $applications = array();
 
-	public static function generateLanguageFiles()
+    private $cacheGenerator;
+
+    private function createLanguageFile($filePath, $content)
+    {
+        $this->getCacheGenerator()->create($filePath, $content);
+    }
+
+    private function getCacheGenerator()
+    {
+        if (null === $this->cacheGenerator) {
+            $this->cacheGenerator = new CacheGenerator(
+                new Filesystem(new Local(Config::get('system.paths.root') . '/cache'))
+            );
+        }
+
+        return $this->cacheGenerator;
+    }
+
+    public function generateLanguageFiles()
 	{
 		// The applications where we need to translate.
 		self::$applications = Config::get('system.translated_applications');
@@ -24,7 +45,7 @@ class LanguageBatchBo
 			echo "[APPLICATION: " . $application . "]\n";
 			foreach ($languages as $language) {
 				echo "\t[LANGUAGE: " . $language . "]";
-				if (self::getLanguageFile($application, $language)) {
+				if ($this->getLanguageFile($application, $language)) {
 					echo " OK\n";
 				}
 				else {
@@ -34,7 +55,7 @@ class LanguageBatchBo
 		}
 	}
 
-	/**
+    /**
 	 * Gets the language file for the given language and stores it.
 	 *
 	 * @param string $application The name of the application.
@@ -43,7 +64,7 @@ class LanguageBatchBo
 	 *
 	 * @throws \Exception
 	 */
-	protected static function getLanguageFile($application, $language)
+	protected function getLanguageFile($application, $language)
 	{
 		$languageResponse = ApiCall::call(
 			'system_api',
@@ -62,20 +83,16 @@ class LanguageBatchBo
 			throw new \Exception('Error during getting language file: (' . $application . '/' . $language . ')');
 		}
 
-		// If we got correct data we store it.
-		$destination = self::getLanguageCachePath($application) . $language . '.php';
-		// If there is no folder yet, we'll create it.
-		var_dump($destination);
-		if (!is_dir(dirname($destination))) {
-			mkdir(dirname($destination), 0755, true);
-		}
+        try {
+            $this->createLanguageFile("/$application/$language.php", $languageResponse['data']);
+        } catch (\Exception $e) {
+            return false;
+        }
 
-		$result = file_put_contents($destination, $languageResponse['data']);
-
-		return (bool)$result;
+        return true;
 	}
 
-	/**
+    /**
 	 * Gets the directory of the cached language files.
 	 *
 	 * @param string $application   The application.
@@ -87,7 +104,7 @@ class LanguageBatchBo
 		return Config::get('system.paths.root') . '/cache/' . $application. '/';
 	}
 
-	public static function generateAppletLanguageXmlFiles()
+    public static function generateAppletLanguageXmlFiles()
 	{
 		// List of the applets [directory => applet_id].
 		$applets = array(
@@ -123,7 +140,8 @@ class LanguageBatchBo
 		echo "\nApplet language XMLs generated.\n";
 	}
 
-	/**
+
+    /**
 	 * Gets the available languages for the given applet.
 	 *
 	 * @param string $applet The applet identifier.
@@ -152,8 +170,7 @@ class LanguageBatchBo
 		return $result['data'];
 	}
 
-
-	/**
+    /**
 	 * Gets a language xml for an applet.
 	 *
 	 * @param string $applet The identifier of the applet.
@@ -187,7 +204,7 @@ class LanguageBatchBo
 		return $result['data'];
 	}
 
-	/**
+    /**
 	 * Checks the api call result.
 	 *
 	 * @param mixed $result The api call result to check.
