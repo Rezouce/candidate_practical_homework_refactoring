@@ -81,30 +81,37 @@ class LanguageBatchBo
 
 		foreach ($applets as $appletDirectory => $appletLanguageId) {
 			echo " Getting > $appletLanguageId ($appletDirectory) language xmls..\n";
+
 			$languages = $this->getAppletLanguages($appletLanguageId);
-			if (empty($languages)) {
-				throw new \Exception('There is no available languages for the ' . $appletLanguageId . ' applet.');
-			}
-			else {
-				echo ' - Available languages: ' . implode(', ', $languages) . "\n";
-			}
-			$path = Config::get('system.paths.root') . '/cache/flash';
+
+            echo ' - Available languages: ' . implode(', ', $languages) . "\n";
+
 			foreach ($languages as $language) {
 				$xmlContent = $this->getAppletLanguageFile($appletLanguageId, $language);
-				$xmlFile    = $path . '/lang_' . $language . '.xml';
-				if (strlen($xmlContent) == file_put_contents($xmlFile, $xmlContent)) {
-					echo " OK saving $xmlFile was successful.\n";
-				}
-				else {
-					throw new \Exception('Unable to save applet: (' . $appletLanguageId . ') language: (' . $language
-						. ') xml (' . $xmlFile . ')!');
-				}
+
+                $this->createXmlFileForAppletLanguage($appletLanguageId, $language, $xmlContent);
+
+                echo " OK saving applet: ($appletLanguageId) language: ($language) was successful.\n";
 			}
+            
 			echo " < $appletLanguageId ($appletDirectory) language xml cached.\n";
 		}
 
 		echo "\nApplet language XMLs generated.\n";
 	}
+
+    private function createXmlFileForAppletLanguage($applet, $language, $content)
+    {
+        $filePath = "/flash/lang_$language.xml";
+
+        $result = $this->getCacheGenerator()->create($filePath, $content);
+
+        if (!$result) {
+            throw new LanguageBatchException(
+                "Unable to save applet: ($applet) language: ($language) xml ($filePath)!"
+            );
+        }
+    }
 
     /**
 	 * Gets the available languages for the given applet.
@@ -116,13 +123,19 @@ class LanguageBatchBo
 	protected function getAppletLanguages($applet)
 	{
         try {
-            return $this->getApiCallResult(
+            $languages = $this->getApiCallResult(
                 array(
                     'system' => 'LanguageFiles',
                     'action' => 'getAppletLanguages'
                 ),
                 array('applet' => $applet)
             );
+
+            if (empty($languages)) {
+                throw new LanguageBatchException("There is no available languages for the $applet applet.");
+            }
+
+            return $languages;
         }
         catch (ApiCallException $e) {
             throw new LanguageBatchException(
