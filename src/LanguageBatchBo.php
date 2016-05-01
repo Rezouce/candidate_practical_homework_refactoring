@@ -2,6 +2,7 @@
 
 namespace Language;
 
+use Language\Api\ApiCall;
 use Language\Api\ApiCallCheck;
 use Language\Api\ApiCallException;
 use Language\OutputRenderer\OutputConsole;
@@ -18,6 +19,8 @@ class LanguageBatchBo
     private $cacheCreator;
 
     private $renderer;
+
+    private $apiCall;
 
 
     private function render($text)
@@ -195,21 +198,25 @@ class LanguageBatchBo
         }
     }
 
-    protected function getResultFromApi($getParameters, $postParameters)
+    private function getResultFromApi($getParameters, $postParameters)
     {
-        $languageResponse = ApiCall::call(
-            'system_api',
-            'language_api',
-            $getParameters,
-            $postParameters
-        );
+        if (null === $this->apiCall) {
+            $this->apiCall = new ApiCall;
+        }
+        
+        $languageResponse = $this->apiCall->call('system_api', 'language_api', $getParameters, $postParameters);
 
         $this->checkForApiErrorResult($languageResponse);
 
         return $languageResponse['data'];
     }
 
-    protected function checkForApiErrorResult($result)
+    public function setApiCall(ApiCall $apiCall)
+    {
+        $this->apiCall = $apiCall;
+    }
+
+    private function checkForApiErrorResult($result)
     {
         (new ApiCallCheck($result))->check();
     }
