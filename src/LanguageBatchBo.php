@@ -16,6 +16,40 @@ class LanguageBatchBo
     private $cacheGenerator;
 
 
+    public function generateLanguageFiles()
+    {
+        $availableLanguages = Config::get('system.translated_applications');
+
+        echo "\nGenerating language files\n";
+
+        foreach ($availableLanguages as $cachePath => $languages) {
+            echo "[APPLICATION: " . $cachePath . "]\n";
+
+            foreach ($languages as $language) {
+                $data = $this->getLanguageFile($language);
+
+                $this->createLanguageFile("/$cachePath/$language.php", $data);
+
+                echo "\t[LANGUAGE: " . $language . "] OK\n";
+            }
+        }
+    }
+
+    protected function getLanguageFile($language)
+    {
+        try {
+            return $this->getApiCallResult(
+                array(
+                    'system' => 'LanguageFiles',
+                    'action' => 'getLanguageFile'
+                ),
+                array('language' => $language)
+            );
+        } catch (ApiCallException $e) {
+            throw new LanguageBatchException("Error during API call for retrieving language file: $language", 0, $e);
+        }
+    }
+
     private function createLanguageFile($filePath, $content)
     {
         $result = $this->getCacheGenerator()->create($filePath, $content);
@@ -35,40 +69,6 @@ class LanguageBatchBo
 
         return $this->cacheGenerator;
     }
-
-    public function generateLanguageFiles()
-	{
-		$availableLanguages = Config::get('system.translated_applications');
-
-		echo "\nGenerating language files\n";
-
-		foreach ($availableLanguages as $cachePath => $languages) {
-			echo "[APPLICATION: " . $cachePath . "]\n";
-
-			foreach ($languages as $language) {
-                $data = $this->getLanguageFile($language);
-
-                $this->createLanguageFile("/$cachePath/$language.php", $data);
-
-                echo "\t[LANGUAGE: " . $language . "] OK\n";
-			}
-		}
-	}
-
-	protected function getLanguageFile($language)
-	{
-        try {
-            return $this->getApiCallResult(
-                array(
-                    'system' => 'LanguageFiles',
-                    'action' => 'getLanguageFile'
-                ),
-                array('language' => $language)
-            );            
-        } catch (ApiCallException $e) {
-            throw new LanguageBatchException("Error during API call for retrieving language file: $language", 0, $e);
-        }
-	}
 
     /**
 	 * Gets the directory of the cached language files.
