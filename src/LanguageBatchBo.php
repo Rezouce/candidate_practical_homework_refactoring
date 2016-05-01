@@ -18,32 +18,32 @@ class LanguageBatchBo
 
     public function generateLanguageFiles()
     {
-        echo "\nGenerating language files\n";
+        echo "\nGenerating language files.\n";
 
         $availableLanguages = Config::get('system.translated_applications');
 
-        foreach ($availableLanguages as $cachePath => $languages) {
-            $this->generateLanguageFile($cachePath, $languages);
+        foreach ($availableLanguages as $application => $languages) {
+            $this->generateLanguageFilesForApplication($application, $languages);
         }
     }
 
-    protected function generateLanguageFile($cachePath, $languages)
+    private function generateLanguageFilesForApplication($applicationName, $languages)
     {
-        echo "[APPLICATION: " . $cachePath . "]\n";
+        echo "[APPLICATION: " . $applicationName . "]\n";
 
         foreach ($languages as $language) {
-            $data = $this->getLanguageFile($language);
+            $content = $this->getPhpFileWithTranslationsForLanguage($language);
 
-            $this->createPhpFileForLanguageFile($cachePath, $language, $data);
+            $this->createPhpFileWithTranslationFor($applicationName, $language, $content);
 
             echo "\t[LANGUAGE: " . $language . "] OK\n";
         }
     }
 
-    protected function getLanguageFile($language)
+    private function getPhpFileWithTranslationsForLanguage($language)
     {
         try {
-            return $this->getApiCallResult(
+            return $this->getResultFromApi(
                 array(
                     'system' => 'LanguageFiles',
                     'action' => 'getLanguageFile'
@@ -51,26 +51,32 @@ class LanguageBatchBo
                 array('language' => $language)
             );
         } catch (ApiCallException $e) {
-            throw new LanguageBatchException("Error during API call for retrieving language file: $language", 0, $e);
+            throw new LanguageBatchException(
+                "Error during API call when trying to retrieve the translation file for language: $language",
+                0,
+                $e
+            );
         }
     }
 
-    private function createPhpFileForLanguageFile($cachePath, $language, $content)
+    private function createPhpFileWithTranslationFor($cachePath, $language, $content)
     {
         $filePath = "/$cachePath/$language.php";
 
-        $result = $this->getCacheGenerator()->create($filePath, $content);
+        $result = $this->getCacheCreator()->create($filePath, $content);
 
         if (!$result) {
-            throw new LanguageBatchException('Unable to generate language file!');
+            throw new LanguageBatchException("Unable to generate language file: $filePath");
         }
     }
 
-    private function getCacheGenerator()
+    private function getCacheCreator()
     {
         if (null === $this->cacheGenerator) {
+            $cacheDirectory = Config::get('system.paths.root') . '/cache';
+
             $this->cacheGenerator = new CacheGenerator(
-                new Filesystem(new Local(Config::get('system.paths.root') . '/cache'))
+                new Filesystem(new Local($cacheDirectory))
             );
         }
 
@@ -84,39 +90,85 @@ class LanguageBatchBo
 			'memberapplet' => 'JSM2_MemberApplet',
 		);
 
-		echo "\nGetting applet language XMLs..\n";
+		echo "\nGetting applet language XMLs.\n";
 
-		foreach ($applets as $appletDirectory => $appletLanguageId) {
-            $this->generateAppletLanguageXmlFilesForApplet($appletLanguageId, $appletDirectory);
+		foreach ($applets as $directory => $appletId) {
+            $this->generateAppletLanguageXmlFilesForApplet($appletId, $directory);
 		}
 
 		echo "\nApplet language XMLs generated.\n";
 	}
 
-    protected function generateAppletLanguageXmlFilesForApplet($appletLanguageId, $appletDirectory)
+    private function generateAppletLanguageXmlFilesForApplet($appletId, $appletDirectory)
     {
-        echo " Getting > $appletLanguageId ($appletDirectory) language xmls..\n";
+        echo " Getting > $appletId ($appletDirectory) language xmls.\n";
 
-        $languages = $this->getAppletLanguages($appletLanguageId);
+        $availableLanguages = $this->getAvailableLanguagesForApplet($appletId);
 
-        echo ' - Available languages: ' . implode(', ', $languages) . "\n";
+        echo ' - Available languages: ' . implode(', ', $availableLanguages) . "\n";
 
-        foreach ($languages as $language) {
-            $xmlContent = $this->getAppletLanguageFile($appletLanguageId, $language);
+        foreach ($availableLanguages as $language) {
+            $content = $this->getXmlFileForApplet($appletId, $language);
 
-            $this->createXmlFileForAppletLanguage($appletLanguageId, $language, $xmlContent);
+            $this->createXmlFileForApplet($appletId, $language, $content);
 
-            echo " OK saving applet: ($appletLanguageId) language: ($language) was successful.\n";
+            echo " OK saving applet: ($appletId) language: ($language) was successful.\n";
         }
 
-        echo " < $appletLanguageId ($appletDirectory) language xml cached.\n";
+        echo " < $appletId ($appletDirectory) language xml cached.\n";
     }
 
-    private function createXmlFileForAppletLanguage($applet, $language, $content)
+    private function getAvailableLanguagesForApplet($appletId)
+	{
+        try {
+            $languages = $this->getResultFromApi(
+                array(
+                    'system' => 'LanguageFiles',
+                    'action' => 'getAppletLanguages'
+                ),
+                array('applet' => $appletId)
+            );
+
+            if (empty($languages)) {
+                throw new LanguageBatchException("There is no available languages for the $appletId applet.");
+            }
+
+            return $languages;
+        }
+        catch (ApiCallException $e) {
+            throw new LanguageBatchException(
+                "Getting language for applet: ($appletId) was unsuccessful.", 0, $e);
+        }
+	}
+
+    private function getXmlFileForApplet($appletId, $language)
+	{
+		try {
+            return $this->getResultFromApi(
+                array(
+                    'system' => 'LanguageFiles',
+                    'action' => 'getAppletLanguageFile'
+                ),
+                array(
+                    'applet' => $appletId,
+                    'language' => $language
+                )
+            );
+		}
+		catch (ApiCallException $e) {
+			throw new LanguageBatchException(
+                "Getting language xml for applet: ($appletId) on language: ($language) was unsuccessful.",
+                0,
+                $e
+            );
+		}
+	}
+
+    private function createXmlFileForApplet($applet, $language, $content)
     {
         $filePath = "/flash/lang_$language.xml";
 
-        $result = $this->getCacheGenerator()->create($filePath, $content);
+        $result = $this->getCacheCreator()->create($filePath, $content);
 
         if (!$result) {
             throw new LanguageBatchException(
@@ -125,68 +177,7 @@ class LanguageBatchBo
         }
     }
 
-    /**
-	 * Gets the available languages for the given applet.
-	 *
-	 * @param string $applet The applet identifier.
-	 * @return array The list of the available applet languages.
-	 * @throws \Exception
-	 */
-	protected function getAppletLanguages($applet)
-	{
-        try {
-            $languages = $this->getApiCallResult(
-                array(
-                    'system' => 'LanguageFiles',
-                    'action' => 'getAppletLanguages'
-                ),
-                array('applet' => $applet)
-            );
-
-            if (empty($languages)) {
-                throw new LanguageBatchException("There is no available languages for the $applet applet.");
-            }
-
-            return $languages;
-        }
-        catch (ApiCallException $e) {
-            throw new LanguageBatchException(
-                "Getting language for applet: ($applet) was unsuccessful.", 0, $e);
-        }
-	}
-
-    /**
-	 * Gets a language xml for an applet.
-	 *
-	 * @param string $applet The identifier of the applet.
-	 * @param string $language The language identifier.
-	 * @return false|string The content of the language file or false if weren't able to get it.
-	 * @throws \Exception
-	 */
-	protected function getAppletLanguageFile($applet, $language)
-	{
-		try {
-            return $this->getApiCallResult(
-                array(
-                    'system' => 'LanguageFiles',
-                    'action' => 'getAppletLanguageFile'
-                ),
-                array(
-                    'applet' => $applet,
-                    'language' => $language
-                )
-            );
-		}
-		catch (ApiCallException $e) {
-			throw new LanguageBatchException(
-                "Getting language xml for applet: ($applet) on language: ($language) was unsuccessful.",
-                0,
-                $e
-            );
-		}
-	}
-
-    protected function getApiCallResult($getParameters, $postParameters)
+    protected function getResultFromApi($getParameters, $postParameters)
     {
         $languageResponse = ApiCall::call(
             'system_api',
