@@ -181,4 +181,67 @@ class LanguageBatchBoTest extends \PHPUnit_Framework_TestCase
 
         $this->languageBatchBo->generateAppletLanguageXmlFiles();
     }
+
+    public function testApiCallFailRetrievingFileDuringGenerateLanguageFiles()
+    {
+        $this->apiCall->method('call')
+            ->willReturn(['status' => 'error']);
+
+        $this->setExpectedException(LanguageBatchException::class, '', LanguageBatchException::FAIL_RETRIEVING_FILE);
+
+        $this->languageBatchBo->generateLanguageFiles();
+    }
+
+    public function testApiCallFailSavingFileDuringGenerateLanguageFiles()
+    {
+        $this->mockGenerateLanguageFilesApiCall();
+        $this->cacheCreator->method('create')->willReturn(false);
+
+        $this->setExpectedException(LanguageBatchException::class, '', LanguageBatchException::FAIL_SAVING_FILE);
+
+        $this->languageBatchBo->generateLanguageFiles();
+    }
+
+    public function testApiCallFailDuringGenerateAppletLanguageXmlFiles()
+    {
+        $this->apiCall->method('call')
+            ->willReturn(['status' => 'error']);
+
+        $this->setExpectedException(LanguageBatchException::class, '', LanguageBatchException::FAIL_RETRIEVING_FILE);
+
+        $this->languageBatchBo->generateAppletLanguageXmlFiles();
+    }
+
+    public function testApiCallFailDuringGenerateAppletLanguageXmlFiles2()
+    {
+        $this->apiCall->method('call')
+            ->with(
+                $this->equalTo('system_api'),
+                $this->equalTo('language_api'),
+                $this->equalTo(array(
+                    'system' => 'LanguageFiles',
+                    'action' => 'getAppletLanguages'
+                )),
+                $this->equalTo(array('applet' => 'JSM2_MemberApplet'))
+            )
+            ->willReturn(['status' => 'OK', 'data' => '']);
+
+        $this->setExpectedException(
+            LanguageBatchException::class,
+            '',
+            LanguageBatchException::NO_AVAILABLE_LANGUAGE_FOR_APPLET
+        );
+
+        $this->languageBatchBo->generateAppletLanguageXmlFiles();
+    }
+
+    public function testApiCallFailSavingFileDuringGenerateAppletLanguageXmlFiles()
+    {
+        $this->mockGenerateAppletLanguageXmlFiles();
+        $this->cacheCreator->method('create')->willReturn(false);
+
+        $this->setExpectedException(LanguageBatchException::class, '', LanguageBatchException::FAIL_SAVING_FILE);
+
+        $this->languageBatchBo->generateAppletLanguageXmlFiles();
+    }
 }

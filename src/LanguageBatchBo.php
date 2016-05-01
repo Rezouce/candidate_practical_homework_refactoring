@@ -74,7 +74,7 @@ class LanguageBatchBo
         } catch (ApiCallException $e) {
             throw new LanguageBatchException(
                 "Error during API call when trying to retrieve the translation file for language: $language",
-                0,
+                LanguageBatchException::FAIL_RETRIEVING_FILE,
                 $e
             );
         }
@@ -87,7 +87,10 @@ class LanguageBatchBo
         $result = $this->getCacheCreator()->create($filePath, $content);
 
         if (!$result) {
-            throw new LanguageBatchException("Unable to generate language file: $filePath");
+            throw new LanguageBatchException(
+                "Unable to generate language file: $filePath",
+                LanguageBatchException::FAIL_SAVING_FILE
+            );
         }
     }
 
@@ -156,12 +159,19 @@ class LanguageBatchBo
             );
 
             if (empty($languages)) {
-                throw new LanguageBatchException("There is no available languages for the $appletId applet.");
+                throw new LanguageBatchException(
+                    "There is no available languages for the $appletId applet.",
+                    LanguageBatchException::NO_AVAILABLE_LANGUAGE_FOR_APPLET
+                );
             }
 
             return $languages;
         } catch (ApiCallException $e) {
-            throw new LanguageBatchException("Getting language for applet: ($appletId) was unsuccessful.", 0, $e);
+            throw new LanguageBatchException(
+                "Getting language for applet: ($appletId) was unsuccessful.",
+                LanguageBatchException::FAIL_RETRIEVING_FILE,
+                $e
+            );
         }
     }
 
@@ -181,7 +191,7 @@ class LanguageBatchBo
         } catch (ApiCallException $e) {
             throw new LanguageBatchException(
                 "Getting language xml for applet: ($appletId) on language: ($language) was unsuccessful.",
-                0,
+                LanguageBatchException::FAIL_RETRIEVING_LANGUAGE_FOR_APPLET,
                 $e
             );
         }
@@ -194,7 +204,10 @@ class LanguageBatchBo
         $result = $this->getCacheCreator()->create($filePath, $content);
 
         if (!$result) {
-            throw new LanguageBatchException("Unable to save applet: ($applet) language: ($language) xml ($filePath)!");
+            throw new LanguageBatchException(
+                "Unable to save applet: ($applet) language: ($language) xml ($filePath)!",
+                LanguageBatchException::FAIL_SAVING_FILE
+            );
         }
     }
 
