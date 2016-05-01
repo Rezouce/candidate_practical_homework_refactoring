@@ -4,7 +4,7 @@ namespace Language;
 
 use League\Flysystem\FilesystemInterface;
 
-class CacheGenerator
+class CacheCreator
 {
 
     private $filesystem;

@@ -75,7 +75,7 @@ class LanguageBatchBo
         if (null === $this->cacheGenerator) {
             $cacheDirectory = Config::get('system.paths.root') . '/cache';
 
-            $this->cacheGenerator = new CacheGenerator(
+            $this->cacheGenerator = new CacheCreator(
                 new Filesystem(new Local($cacheDirectory))
             );
         }
