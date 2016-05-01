@@ -4,6 +4,7 @@ namespace Language;
 
 use Language\Api\ApiCallCheck;
 use Language\Api\ApiCallException;
+use Language\OutputRenderer\OutputConsole;
 use League\Flysystem\Adapter\Local;
 use League\Flysystem\Filesystem;
 
@@ -15,10 +16,21 @@ class LanguageBatchBo
 
     private $cacheGenerator;
 
+    private $render;
+
+
+    private function render($text)
+    {
+        if (null === $this->render) {
+            $this->render = new OutputConsole;
+        }
+
+        $this->render->render($text);
+    }
 
     public function generateLanguageFiles()
     {
-        echo "\nGenerating language files.\n";
+        $this->render("\nGenerating language files.\n");
 
         $availableLanguages = Config::get('system.translated_applications');
 
@@ -29,14 +41,14 @@ class LanguageBatchBo
 
     private function generateLanguageFilesForApplication($applicationName, $languages)
     {
-        echo "[APPLICATION: " . $applicationName . "]\n";
+        $this->render("[APPLICATION: " . $applicationName . "]\n");
 
         foreach ($languages as $language) {
             $content = $this->getPhpFileWithTranslationsForLanguage($language);
 
             $this->createPhpFileWithTranslationFor($applicationName, $language, $content);
 
-            echo "\t[LANGUAGE: " . $language . "] OK\n";
+            $this->render("\t[LANGUAGE: " . $language . "] OK\n");
         }
     }
 
@@ -90,32 +102,32 @@ class LanguageBatchBo
 			'memberapplet' => 'JSM2_MemberApplet',
 		);
 
-		echo "\nGetting applet language XMLs.\n";
+        $this->render("\nGetting applet language XMLs.\n");
 
 		foreach ($applets as $directory => $appletId) {
             $this->generateAppletLanguageXmlFilesForApplet($appletId, $directory);
 		}
 
-		echo "\nApplet language XMLs generated.\n";
+        $this->render("\nApplet language XMLs generated.\n");
 	}
 
     private function generateAppletLanguageXmlFilesForApplet($appletId, $appletDirectory)
     {
-        echo " Getting > $appletId ($appletDirectory) language xmls.\n";
+        $this->render(" Getting > $appletId ($appletDirectory) language xmls.\n");
 
         $availableLanguages = $this->getAvailableLanguagesForApplet($appletId);
 
-        echo ' - Available languages: ' . implode(', ', $availableLanguages) . "\n";
+        $this->render(' - Available languages: ' . implode(', ', $availableLanguages) . "\n");
 
         foreach ($availableLanguages as $language) {
             $content = $this->getXmlFileForApplet($appletId, $language);
 
             $this->createXmlFileForApplet($appletId, $language, $content);
 
-            echo " OK saving applet: ($appletId) language: ($language) was successful.\n";
+            $this->render(" OK saving applet: ($appletId) language: ($language) was successful.\n");
         }
 
-        echo " < $appletId ($appletDirectory) language xml cached.\n";
+        $this->render(" < $appletId ($appletDirectory) language xml cached.\n");
     }
 
     private function getAvailableLanguagesForApplet($appletId)
