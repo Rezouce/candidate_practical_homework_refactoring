@@ -29,19 +29,20 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase
      *
      * @param $directory
      */
-    private function rmdirRecursive($directory) {
+    private function rmdirRecursive($directory)
+    {
         if (!is_dir($directory)) {
             return;
         }
 
-        foreach(scandir($directory) as $file) {
+        foreach (scandir($directory) as $file) {
             if ('.' === $file || '..' === $file) {
                 continue;
             }
+
             if (is_dir("$directory/$file")) {
                 $this->rmdirRecursive("$directory/$file");
-            }
-            else {
+            } else {
                 unlink("$directory/$file");
             }
         }
