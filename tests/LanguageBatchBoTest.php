@@ -2,6 +2,7 @@
 namespace Language;
 
 use Language\Api\ApiCall;
+use Language\Config\Config;
 use Language\OutputRenderer\OutputLog;
 
 class LanguageBatchBoTest extends \PHPUnit_Framework_TestCase
@@ -19,6 +20,9 @@ class LanguageBatchBoTest extends \PHPUnit_Framework_TestCase
     /** @var \PHPUnit_Framework_MockObject_MockObject */
     private $apiCall;
 
+    /** @var \PHPUnit_Framework_MockObject_MockObject */
+    private $config;
+
 
     public function setUp()
     {
@@ -34,13 +38,19 @@ class LanguageBatchBoTest extends \PHPUnit_Framework_TestCase
         $this->apiCall = $apiCall
             = $this->getMockBuilder(ApiCall::class)->disableOriginalConstructor()->getMock();
 
+        /** @var Config $config */
+        $this->config = $config
+            = $this->getMockBuilder(Config::class)->disableOriginalConstructor()->getMock();
+        $this->mockConfig();
+
         $this->languageBatchBo = new LanguageBatchBo;
         $this->languageBatchBo->setOutputRenderer($this->renderer);
         $this->languageBatchBo->setCacheCreator($cacheCreator);
         $this->languageBatchBo->setApiCall($apiCall);
+        $this->languageBatchBo->setConfig($config);
     }
 
-    private function generationSucceeded()
+    private function mockGenerationSucceeded()
     {
         $this->cacheCreator->method('create')->willReturn(true);
     }
@@ -56,7 +66,7 @@ class LanguageBatchBoTest extends \PHPUnit_Framework_TestCase
                         'system' => 'LanguageFiles',
                         'action' => 'getLanguageFile'
                     )),
-                    $this->equalTo(array('language' => 'en'))
+                    $this->equalTo(array('language' => 'fr'))
                 ],
                 [
                     $this->equalTo('system_api'),
@@ -65,22 +75,12 @@ class LanguageBatchBoTest extends \PHPUnit_Framework_TestCase
                         'system' => 'LanguageFiles',
                         'action' => 'getLanguageFile'
                     )),
-                    $this->equalTo(array('language' => 'hu'))
-                ],
-                [
-                    $this->equalTo('system_api'),
-                    $this->equalTo('language_api'),
-                    $this->equalTo(array(
-                        'system' => 'LanguageFiles',
-                        'action' => 'getAppletLanguages'
-                    )),
-                    $this->equalTo(array('language' => 'hu'))
+                    $this->equalTo(array('language' => 'de'))
                 ]
             )
             ->will($this->onConsecutiveCalls(
                 ['status' => 'OK', 'data' => 'en_php_file_translations'],
-                ['status' => 'OK', 'data' => 'hu_php_file_translations'],
-                ['status' => 'OK', 'data' => ['en']]
+                ['status' => 'OK', 'data' => 'hu_php_file_translations']
             ));
     }
 
@@ -116,18 +116,31 @@ class LanguageBatchBoTest extends \PHPUnit_Framework_TestCase
             ));
     }
 
+    private function mockConfig()
+    {
+        $this->config->method('get')
+            ->withConsecutive(
+                [$this->equalTo('system.translated_applications')],
+                [$this->equalTo('system.paths.root')]
+            )
+            ->will($this->onConsecutiveCalls(
+                ['appletId' => ['fr', 'de']],
+                ['systemPathsRoot']
+            ));
+    }
+
     public function testOutputWhenGenerateLanguageFiles()
     {
-        $this->generationSucceeded();
+        $this->mockGenerationSucceeded();
         $this->mockGenerateLanguageFilesApiCall();
 
         $this->languageBatchBo->generateLanguageFiles();
 
         $logs = [
             "\nGenerating language files.\n",
-            "[APPLICATION: portal]\n",
-            "\t[LANGUAGE: en] OK\n",
-            "\t[LANGUAGE: hu] OK\n",
+            "[APPLICATION: appletId]\n",
+            "\t[LANGUAGE: fr] OK\n",
+            "\t[LANGUAGE: de] OK\n",
         ];
 
         $this->assertEquals($logs, $this->renderer->getLogs());
@@ -135,7 +148,7 @@ class LanguageBatchBoTest extends \PHPUnit_Framework_TestCase
 
     public function testOutputWhenGenerateAppletLanguageXmlFiles()
     {
-        $this->generationSucceeded();
+        $this->mockGenerationSucceeded();
         $this->mockGenerateAppletLanguageXmlFiles();
 
         $this->languageBatchBo->generateAppletLanguageXmlFiles();
@@ -159,8 +172,8 @@ class LanguageBatchBoTest extends \PHPUnit_Framework_TestCase
         $this->cacheCreator->expects($this->exactly(2))
             ->method('create')
             ->withConsecutive(
-                [$this->equalTo('/portal/en.php'), 'en_php_file_translations'],
-                [$this->equalTo('/portal/hu.php'), 'hu_php_file_translations']
+                [$this->equalTo('/appletId/fr.php'), 'en_php_file_translations'],
+                [$this->equalTo('/appletId/de.php'), 'hu_php_file_translations']
             )
             ->willReturn(true);
 

@@ -5,6 +5,7 @@ namespace Language;
 use Language\Api\ApiCall;
 use Language\Api\ApiCallCheck;
 use Language\Api\ApiCallException;
+use Language\Config\Config;
 use Language\OutputRenderer\OutputConsole;
 use Language\OutputRenderer\OutputRenderer;
 use League\Flysystem\Adapter\Local;
@@ -21,6 +22,8 @@ class LanguageBatchBo
     private $renderer;
 
     private $apiCall;
+
+    private $config;
 
 
     private function render($text)
@@ -41,7 +44,7 @@ class LanguageBatchBo
     {
         $this->render("\nGenerating language files.\n");
 
-        $availableLanguages = Config::get('system.translated_applications');
+        $availableLanguages = $this->getConfig('system.translated_applications');
 
         foreach ($availableLanguages as $application => $languages) {
             $this->generateLanguageFilesForApplication($application, $languages);
@@ -97,7 +100,7 @@ class LanguageBatchBo
     private function getCacheCreator()
     {
         if (null === $this->cacheCreator) {
-            $cacheDirectory = Config::get('system.paths.root') . '/cache';
+            $cacheDirectory = $this->getConfig('system.paths.root') . '/cache';
 
             $this->cacheCreator = new CacheCreator(
                 new Filesystem(new Local($cacheDirectory))
@@ -232,5 +235,19 @@ class LanguageBatchBo
     private function checkForApiErrorResult($result)
     {
         (new ApiCallCheck($result))->check();
+    }
+
+    private function getConfig($key)
+    {
+        if (null === $this->config) {
+            $this->config = new Config;
+        }
+
+        return $this->config->get($key);
+    }
+
+    public function setConfig(Config $config)
+    {
+        $this->config = $config;
     }
 }
