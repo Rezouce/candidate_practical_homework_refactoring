@@ -3,6 +3,7 @@
 namespace Language;
 
 use Language\Api\ApiCallCheck;
+use Language\Api\ApiCallException;
 use League\Flysystem\Adapter\Local;
 use League\Flysystem\Filesystem;
 
@@ -53,34 +54,19 @@ class LanguageBatchBo
 		}
 	}
 
-    /**
-	 * Gets the language file for the given language and stores it.
-	 *
-	 * @param string $language The identifier of the language.
-	 * @return bool If there was an error during the download of the language file.
-	 *
-	 * @throws \Exception
-	 */
 	protected function getLanguageFile($language)
 	{
-		$languageResponse = ApiCall::call(
-			'system_api',
-			'language_api',
-			array(
-				'system' => 'LanguageFiles',
-				'action' => 'getLanguageFile'
-			),
-			array('language' => $language)
-		);
-
-		try {
-			self::checkForApiErrorResult($languageResponse);
-
-            return $languageResponse['data'];
-		}
-		catch (\Exception $e) {
-			throw new \Exception("Error during API call for retrieving language file: $language");
-		}
+        try {
+            return $this->getApiCallResult(
+                array(
+                    'system' => 'LanguageFiles',
+                    'action' => 'getLanguageFile'
+                ),
+                array('language' => $language)
+            );            
+        } catch (ApiCallException $e) {
+            throw new LanguageBatchException("Error during API call for retrieving language file: $language", 0, $e);
+        }
 	}
 
     /**
@@ -206,4 +192,18 @@ class LanguageBatchBo
 	{
         (new ApiCallCheck($result))->check();
 	}
+
+    protected function getApiCallResult($getParameters, $postParameters)
+    {
+        $languageResponse = ApiCall::call(
+            'system_api',
+            'language_api',
+            $getParameters,
+            $postParameters
+        );
+
+        self::checkForApiErrorResult($languageResponse);
+
+        return $languageResponse['data'];
+    }
 }
