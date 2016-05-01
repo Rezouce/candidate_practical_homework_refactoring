@@ -116,24 +116,19 @@ class LanguageBatchBo
 	 */
 	protected function getAppletLanguages($applet)
 	{
-		$result = ApiCall::call(
-			'system_api',
-			'language_api',
-			array(
-				'system' => 'LanguageFiles',
-				'action' => 'getAppletLanguages'
-			),
-			array('applet' => $applet)
-		);
-
-		try {
-            $this->checkForApiErrorResult($result);
-		}
-		catch (\Exception $e) {
-			throw new \Exception('Getting languages for applet (' . $applet . ') was unsuccessful ' . $e->getMessage());
-		}
-
-		return $result['data'];
+        try {
+            return $this->getApiCallResult(
+                array(
+                    'system' => 'LanguageFiles',
+                    'action' => 'getAppletLanguages'
+                ),
+                array('applet' => $applet)
+            );
+        }
+        catch (ApiCallException $e) {
+            throw new LanguageBatchException(
+                "Getting language for applet: ($applet) was unsuccessful.", 0, $e);
+        }
 	}
 
     /**
@@ -146,28 +141,25 @@ class LanguageBatchBo
 	 */
 	protected function getAppletLanguageFile($applet, $language)
 	{
-		$result = ApiCall::call(
-			'system_api',
-			'language_api',
-			array(
-				'system' => 'LanguageFiles',
-				'action' => 'getAppletLanguageFile'
-			),
-			array(
-				'applet' => $applet,
-				'language' => $language
-			)
-		);
-
 		try {
-            $this->checkForApiErrorResult($result);
+            return $this->getApiCallResult(
+                array(
+                    'system' => 'LanguageFiles',
+                    'action' => 'getAppletLanguageFile'
+                ),
+                array(
+                    'applet' => $applet,
+                    'language' => $language
+                )
+            );
 		}
-		catch (\Exception $e) {
-			throw new \Exception('Getting language xml for applet: (' . $applet . ') on language: (' . $language . ') was unsuccessful: '
-				. $e->getMessage());
+		catch (ApiCallException $e) {
+			throw new LanguageBatchException(
+                "Getting language xml for applet: ($applet) on language: ($language) was unsuccessful.",
+                0,
+                $e
+            );
 		}
-
-		return $result['data'];
 	}
 
     /**
