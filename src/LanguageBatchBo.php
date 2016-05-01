@@ -10,14 +10,9 @@ use League\Flysystem\Filesystem;
  */
 class LanguageBatchBo
 {
-    /**
-	 * Contains the applications which ones require translations.
-	 *
-	 * @var array
-	 */
-	protected static $applications = array();
 
     private $cacheGenerator;
+
 
     private function createLanguageFile($filePath, $content)
     {
@@ -37,19 +32,21 @@ class LanguageBatchBo
 
     public function generateLanguageFiles()
 	{
-		// The applications where we need to translate.
-		self::$applications = Config::get('system.translated_applications');
+		$availableLanguages = Config::get('system.translated_applications');
 
 		echo "\nGenerating language files\n";
-		foreach (self::$applications as $application => $languages) {
-			echo "[APPLICATION: " . $application . "]\n";
+
+		foreach ($availableLanguages as $cachePath => $languages) {
+			echo "[APPLICATION: " . $cachePath . "]\n";
+
 			foreach ($languages as $language) {
-				echo "\t[LANGUAGE: " . $language . "]";
-				if ($this->getLanguageFile($application, $language)) {
-					echo " OK\n";
-				}
-				else {
-					throw new \Exception('Unable to generate language file!');
+                try {
+                    $data = $this->getLanguageFile($language);
+                    $this->createLanguageFile("/$cachePath/$language.php", $data);
+
+                    echo "\t[LANGUAGE: " . $language . "] OK\n";
+                } catch (\Exception $e) {
+					throw new \Exception('Unable to generate language file!', 0, $e);
 				}
 			}
 		}
@@ -58,13 +55,12 @@ class LanguageBatchBo
     /**
 	 * Gets the language file for the given language and stores it.
 	 *
-	 * @param string $application The name of the application.
 	 * @param string $language The identifier of the language.
 	 * @return bool If there was an error during the download of the language file.
 	 *
 	 * @throws \Exception
 	 */
-	protected function getLanguageFile($application, $language)
+	protected function getLanguageFile($language)
 	{
 		$languageResponse = ApiCall::call(
 			'system_api',
@@ -78,18 +74,12 @@ class LanguageBatchBo
 
 		try {
 			self::checkForApiErrorResult($languageResponse);
+
+            return $languageResponse['data'];
 		}
 		catch (\Exception $e) {
-			throw new \Exception('Error during getting language file: (' . $application . '/' . $language . ')');
+			throw new \Exception("Error during API call for retrieving language file: $language");
 		}
-
-        try {
-            $this->createLanguageFile("/$application/$language.php", $languageResponse['data']);
-        } catch (\Exception $e) {
-            return false;
-        }
-
-        return true;
 	}
 
     /**
